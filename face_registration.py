@@ -9,13 +9,21 @@ def register_face():
     capture_button = st.button("Capture Face")
 
     if capture_button and name:
-        cap = cv2.VideoCapture(0)
+        camera_index = 0
+        cap = cv2.VideoCapture(camera_index)
+        
+        # Try multiple indices if the first one fails
+        while not cap.isOpened() and camera_index < 5:
+            st.warning(f"Warning: Camera at index {camera_index} not accessible. Trying next index...")
+            camera_index += 1
+            cap = cv2.VideoCapture(camera_index)
+
         if not cap.isOpened():
-            st.error("Error: Could not open webcam.")
+            st.error("Error: Could not open any webcam. Please check the connection and try again.")
             return
         
         st.text("Press 'q' to capture the face.")
-        
+
         while True:
             ret, frame = cap.read()
             if not ret:

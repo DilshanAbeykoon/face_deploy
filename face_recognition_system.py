@@ -50,9 +50,17 @@ def recognize_faces():
     frame_window = st.image([])
 
     def process_frames(stop_event):
-        cap = cv2.VideoCapture(0)
+        camera_index = 0
+        cap = cv2.VideoCapture(camera_index)
+        
+        # Try multiple indices if the first one fails
+        while not cap.isOpened() and camera_index < 5:
+            st.warning(f"Warning: Camera at index {camera_index} not accessible. Trying next index...")
+            camera_index += 1
+            cap = cv2.VideoCapture(camera_index)
+
         if not cap.isOpened():
-            st.error("Error: Could not open webcam.")
+            st.error("Error: Could not open any webcam. Please check the connection and try again.")
             return
 
         while not stop_event.is_set():
@@ -67,30 +75,10 @@ def recognize_faces():
 
             for (x, y, w, h) in faces:
                 cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 0, 0), 2)
-                face_img = gray[y:y+h, x:x+w]
-                face_img = cv2.resize(face_img, (100, 100))  # Resize for consistent comparison
 
-                name = "Unknown"
-                min_dist = float("inf")
-
-                for registered_face, registered_name in zip(registered_faces, names):
-                    registered_face_resized = cv2.resize(registered_face, (100, 100))
-                    dist = np.linalg.norm(face_img - registered_face_resized)
-                    if dist < min_dist:
-                        min_dist = dist
-                        name = registered_name
-
-                cv2.putText(frame, name, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
-
-            frame_queue.put(frame)
-            time.sleep(0.1)
+            frame_window.image(frame)
 
         cap.release()
 
-    if st.session_state.run:
-        Thread(target=process_frames, args=(stop_event,)).start()
-
-    while st.session_state.run:
-        if not frame_queue.empty():
-            frame = frame_queue.get()
-            frame_window.image(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
+    if not st.session_state.run:
+        st.info("Webcam is not running.")
