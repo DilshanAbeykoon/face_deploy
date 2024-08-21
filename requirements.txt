@@ -1,5 +1,2 @@
 opencv-python
-opencv-contrib-python
 streamlit
-dlib
-numpy
